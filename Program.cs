@@ -1,3 +1,4 @@
+
 using System;
 using System.Collections.Generic;
 
@@ -203,22 +204,34 @@ namespace Cafe
                 FirstName = "Александр",
                 LastName = "Петренко"
             };
+        //    var ingredients = new List<Ingredient>
+        //{
+        //    new Ingredient(IngridientType.CoffeeBeans, 10),
+        //    new Ingredient(IngridientType.Water, 200),
+        //    new Ingredient(IngridientType.Sugar, 5)
+        //};
 
+        //    // Вывод ингредиентов
+        //    Console.WriteLine("\nИнгредиенты для напитка:");
+        //    foreach (var ingr in ingredients)
+        //    {
+        //        Console.WriteLine($"{ingr.Type}: {ingr.Quantity} грамм");
+        //    }
             //меню
             Drink[] menu = { new Americano(), new Latte() };
 
             //выбор случайного напитка
             var rnd = new Random();
             var chosenDrink = menu[rnd.Next(menu.Length)];
-            
+
             //выбор случайного размера
             DrinkSize[] sizes = (DrinkSize[])Enum.GetValues(typeof(DrinkSize));
             int index = rnd.Next(sizes.Length);
             chosenDrink.Size = sizes[index];
-            
+
             //работа
             Console.WriteLine("Работа кафе:");
-            
+
             waiter.TakeOrder(customer, chosenDrink);
 
             try
