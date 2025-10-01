@@ -1,22 +1,26 @@
 
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Cafe
 {
     //интерфейс приготовления напитков
     public interface ICookable
     {
-        void Prepare();
+        public void Prepare(string status) {
+
+        }
     }
 
     //абстрактный класс напитков
     public abstract class Drink : ICookable
     {
-        public string Name;
+        public string Name { get; set; }
         public DrinkSize Size;
 
-        public abstract void Prepare();
+
 
         public override string ToString()
         {
@@ -52,11 +56,7 @@ namespace Cafe
             Name = "Американо";
         }
 
-        public override void Prepare()
-        {
-            Console.WriteLine("Приготовление напитка для клиента\n");
-            Console.WriteLine("Приготовление американо: налить эспрессо и добавить горячую воду.");
-        }
+
     }
 
     public class Latte : Drink
@@ -66,35 +66,31 @@ namespace Cafe
             Name = "Латте";
         }
 
-        public override void Prepare()
-        {
-            Console.WriteLine("Приготовление напитка для клиента\n");
-            Console.WriteLine("Приготовление латте: налить эспрессо и добавить вспененное молоко.");
-        }
+       
     }
 
     // Перечисление ингредиентов
-    public record Ingredient(IngridientType Type, double Quantity);
+   
 
-    public enum IngridientType
-    {
-        NaturalMilk,
-        CoconutMilk,
-        AlmondMilk,
-        Water,
-        Sugar,
-        Cinnamon,
-        Salt,
-        CoffeeBeans
-    }
 
-    // Базовый класс персонажа
-    public class Person
+    //базовый класс персонажа
+    public class Person : ICookable
     {
         public string FirstName;
         public string LastName;
         public string Position;
-
+        public virtual void Prepare(List<Orders> orders,string status) {
+            if (status == "В списке готовки")
+            {
+                var currentOrder = orders[0];
+                Console.WriteLine($"(статус напитка:{status})");
+                Console.WriteLine("Приготовление напитка");
+                status = "Готово";
+                Console.WriteLine($"(статус напитка:{status})");
+                Console.WriteLine($"Напиток {currentOrder.drink_name} для {currentOrder.customer} [{currentOrder.size}] готов");
+                orders.Remove(currentOrder);
+            }
+        }
         public override string ToString()
         {
             return $"{FirstName} {LastName} {Position}";
@@ -107,15 +103,9 @@ namespace Cafe
         {
             Position = "Бариста";
         }
+        
 
-        public void MakeDrink(Drink drink)
-        {
-            Console.WriteLine("Подготавка к приготовлению напитка");
-            Console.WriteLine($"{FirstName} {LastName} начал приготовление :{drink}");
-            drink.Prepare();
-            Console.WriteLine($"{FirstName} {LastName} закончил приготовление :{drink}");
-            Console.WriteLine($"Отдал заказ клиенту");
-        }
+       
     }
 
     public class Waiter : Person
@@ -125,21 +115,13 @@ namespace Cafe
             Position = "Официант";
         }
 
-        public void TakeOrder(Customer customer, Drink drink)
-        {
-            Console.WriteLine($"{Position}:{FirstName} {LastName}");
-            Console.WriteLine($"{customer}");
-            Console.WriteLine($"{FirstName} {LastName} принимает заказ от {customer}:\n{drink}");
-        }
+
+    }
+    public record Orders(string drink_name, string size, string customer, string status)
+    {
+
     }
 
-    public class Admin : Person
-    {
-        public Admin()
-        {
-            Position = "Администратор";
-        }
-    }
 
     public class Customer : Person
     {
@@ -147,101 +129,74 @@ namespace Cafe
         {
             Position = "Клиент";
         }
+        public void CreateOrder(List<Orders> orders) {
+            
+            List<Drink> menu = new List<Drink>() {new Americano(),new Latte () };
+            Console.WriteLine("Меню:");
+            foreach (var drink in menu)
+            {
+                Console.WriteLine(drink.Name);
+            }
+
+            Console.WriteLine("Введите название напитка:");
+            string drink_name = Console.ReadLine();
+
+            Console.WriteLine("Введите имя клиента:");
+            string customer_name = Console.ReadLine();
+            string[] sizes = Enum.GetNames(typeof(DrinkSize)) ;
+            foreach (var item in sizes) {
+                Console.WriteLine(item);
+            }
+
+            Console.WriteLine("Введите размер:");
+            
+            string size = Console.ReadLine();
+            string status = "В списке готовки";
+            var order = new Orders (drink_name,size,customer_name,status);
+            orders.Add(order);
+            Console.WriteLine("Заказ добавлен в список готовки");
+        }
     }
 
 
 
-    public class Order
-    {
-        public Customer Customer;
-        public Drink Drink;
-        public bool IsCompleted = false;
 
-        public Order(Customer customer, Drink drink)
-        {
-            Customer = customer;
-            if (drink == null)
-            {
-
-                Console.WriteLine("Ошибка: напиток не может быть пустым");
-            }
-            else
-            {
-                Drink = drink;
-            }
-        }
-
-        public void CompleteOrder()
-        {
-            IsCompleted = true;
-        }
-
-        public override string ToString()
-        {
-            return $"Заказ: {Drink}  для  {Customer}";
-        }
+public class InvalidSizeException : Exception
+{
+    public override string Message 
+    { 
+        get { return "Ошибка: Неверный размер напитка"; } 
     }
-
+}
     class Program
     {
         static void Main()
         {
-            // Создаем сотрудников и клиента
-            var barista = new Barista
+            Barista barista = new Barista();
+
+            List<Orders> orders = new List<Orders>();
+            Customer customer = new Customer();
+            customer.CreateOrder(orders);
+
+            var currentOrder = orders[0];
+            if (DrinkSize.Small.ToString() == currentOrder.size || DrinkSize.Medium.ToString() == currentOrder.size || DrinkSize.Large.ToString() == currentOrder.size)
             {
-                FirstName = "Иван",
-                LastName = "Иванов"
-            };
-
-            var waiter = new Waiter
-            {
-                FirstName = "Станислав",
-                LastName = "Петров"
-            };
-
-            var customer = new Customer
-            {
-                FirstName = "Александр",
-                LastName = "Петренко"
-            };
-        //    var ingredients = new List<Ingredient>
-        //{
-        //    new Ingredient(IngridientType.CoffeeBeans, 10),
-        //    new Ingredient(IngridientType.Water, 200),
-        //    new Ingredient(IngridientType.Sugar, 5)
-        //};
-
-        //    // Вывод ингредиентов
-        //    Console.WriteLine("\nИнгредиенты для напитка:");
-        //    foreach (var ingr in ingredients)
-        //    {
-        //        Console.WriteLine($"{ingr.Type}: {ingr.Quantity} грамм");
-        //    }
-            //меню
-            Drink[] menu = { new Americano(), new Latte() };
-
-            //выбор случайного напитка
-            var rnd = new Random();
-            var chosenDrink = menu[rnd.Next(menu.Length)];
-
-            //выбор случайного размера
-            DrinkSize[] sizes = (DrinkSize[])Enum.GetValues(typeof(DrinkSize));
-            int index = rnd.Next(sizes.Length);
-            chosenDrink.Size = sizes[index];
-
-            //работа
-            Console.WriteLine("Работа кафе:");
-
-            waiter.TakeOrder(customer, chosenDrink);
-
-            try
-            {
-                barista.MakeDrink(chosenDrink);
+                string status = currentOrder.status;
+                barista.Prepare(orders, status);
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Ошибка: " + ex.Message);
+            else {
+                var ex = new InvalidSizeException();
+                Console.WriteLine(ex.Message);
             }
+
+
+
+            Console.ReadKey();
+            
+            
+             
+          
         }
     }
 }
+
